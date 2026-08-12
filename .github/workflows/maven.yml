@@ -1,0 +1,41 @@
+name: Maven CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-package:
+    runs-on: ubuntu-latest
+    container:
+      image: maven:3.5.0-jdk-8
+    env:
+      MAVEN_OPTS: -Xmx2048m
+    steps:
+      # v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Build
+        run: |
+          mvn --version
+          java -version
+          mvn clean compile
+      - name: Test
+        run: mvn test
+      # v4.6.2
+      - name: Publish test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/*.xml
+          if-no-files-found: ignore
+      - name: Package
+        run: mvn package -DskipTests
+      - name: Archive package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maven-package
+          path: target/*.jar
+          if-no-files-found: error
